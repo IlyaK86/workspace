@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Data (опционально: коммить только CSV, не bin)
+*.csv
+*.json
+
+# Reports
+*.html
+
+# Logs
+*.log
+*.tmp
+
+# Secrets (КРИТИЧНО!)
+.env
+*.key
+*.pem
+*.token
+.github/workflows/secrets.env
+
+# OS
+.DS_Store
+Thumbs.db

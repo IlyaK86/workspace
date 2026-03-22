@@ -1,0 +1,37 @@
+name: Fetch Data & Generate Report
+
+on:
+  schedule:
+    - cron: '0 12 * * *'  # Ежедневно в 12:00 UTC
+  workflow_dispatch:  # Ручной запуск
+
+jobs:
+  fetch-and-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pandas matplotlib requests
+
+      - name: Fetch data
+        run: python src/fetch_data.py
+
+      - name: Process data
+        run: python src/process_data.py
+
+      - name: Generate report
+        run: python src/visualize.py
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./reports
