@@ -22,10 +22,13 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
           pip freeze > requirements.locked
+          
+          # Проверка Excel библиотек
+          python3 -c "import pandas; import openpyxl; print('✅ Excel libraries ready')"
 
       - name: Verify installation
         run: |
-          python3 -c "import pandas, numpy, matplotlib, seaborn, plotly; print('All libraries installed!')"
+          python3 -c "import pandas, numpy, matplotlib, seaborn, plotly, openpyxl; print('All libraries installed!')"
 
       - name: Commit requirements
         run: |
