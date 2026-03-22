@@ -1,0 +1,114 @@
+name: Analyze Excel Report
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      excel_file:
+        description: 'Excel файл для анализа'
+        required: false
+        default: 'data/current_data.xlsx'
+      generate_reports:
+        description: 'Генерировать отчеты?'
+        required: false
+        default: 'true'
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pandas numpy matplotlib seaborn plotly scipy scikit-learn statsmodels openpyxl
+          pip freeze > requirements.locked
+
+      - name: Test libraries
+        run: |
+          python3 -c "import pandas as pd; print('✅ Libraries installed')"
+
+      - name: Create sample data if not exists
+        run: |
+          python3 << 'PYTHON'
+          import pandas as pd
+          import os
+          
+          if not os.path.exists('data/current_data.xlsx'):
+              df = pd.DataFrame({
+                  'Date': pd.date_range('2026-01-01', periods=30),
+                  'Category': ['A', 'B', 'C'] * 10,
+                  'Value': [100 + i*10 for i in range(30)],
+                  'Quantity': [5 + i for i in range(30)]
+              })
+              os.makedirs('data', exist_ok=True)
+              df.to_excel('data/current_data.xlsx', index=False)
+              print("✅ Sample data created")
+          else:
+              print("✅ Data already exists")
+          PYTHON
+
+      - name: Run analysis
+        run: |
+          python3 << 'PYTHON'
+          import os
+          import sys
+          sys.path.insert(0, '.')
+          
+          try:
+              from src.excel_analytics import ExcelAnalyticsEngine
+              
+              excel_file = 'data/current_data.xlsx'
+              print(f"📊 Analyzing: {excel_file}")
+              
+              analyzer = ExcelAnalyticsEngine(
+                  excel_file=excel_file,
+                  cleanup_kwargs={'drop_null': True, 'drop_duplicates': True}
+              )
+              
+              analysis = analyzer.comprehensive_analysis()
+              
+              # Generate reports
+              print("📝 Generating reports...")
+              excel_report = analyzer.generate_excel_report(analysis)
+              html_report = analyzer.generate_interactive_html_report(analysis)
+              
+              print("✅ Analysis complete!")
+              print(f"  Excel: {excel_report}")
+              print(f"  HTML: {html_report}")
+              print(f"\n📊 Summary:")
+              print(f"  • Quality: {analysis['data_quality']['data_quality_score']}")
+              print(f"  • Total Rows: {analysis['loading']['rows']}")
+              print(f"  • Total Columns: {analysis['loading']['columns']}")
+              
+          except Exception as e:
+              print(f"❌ Error: {str(e)}")
+              import traceback
+              traceback.print_exc()
+              sys.exit(1)
+          PYTHON
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: analysis-reports
+          path: |
+            reports/
+            output/
+          retention-days: 7
+
+      - name: Deploy to GitHub Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./reports
+          force_orphan: true
