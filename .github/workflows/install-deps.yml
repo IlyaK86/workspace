@@ -1,0 +1,34 @@
+name: Install Dependencies
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip freeze > requirements.locked
+
+      - name: Verify installation
+        run: |
+          python3 -c "import pandas, numpy, matplotlib, seaborn, plotly; print('All libraries installed!')"
+
+      - name: Commit requirements
+        run: |
+          git add requirements.*
+          git commit -m "Update requirements" 2>/dev/null || echo "No changes"
+          git push 2>/dev/null || echo "Push failed"
